@@ -97,7 +97,7 @@ public class ConnectedClient {
     private void tellClientNameIsValid() throws IOException {
         JSONObject response = new JSONObject("{method:register-response,valid:1}");
         response.put("id", id);
-        response.put("sync-msg", server.getCurrentSyncronizationMessage().encodeJSON());
+        response.put("sync-msg", server.getCurrentSyncronizationMessage(id).encodeJSON());
         sendJsonResponse(response);
     }
 

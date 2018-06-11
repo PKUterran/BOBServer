@@ -26,7 +26,7 @@ public class BOBServer {
 
     private final ArrayList<JSONSerializable> actionPool = new ArrayList<>();
 
-    private final ServerModel serverModel = new ServerModel();
+    private final ServerModel serverModel = new ServerModel(System.currentTimeMillis());
 
     private final BroadcastTask broadcastTask = new BroadcastTask();
 
@@ -35,7 +35,7 @@ public class BOBServer {
      *
      * @return
      */
-    public SyncronizationMessage getCurrentSyncronizationMessage() {
+    public SyncronizationMessage getCurrentSyncronizationMessage(Integer generateID) {
         synchronized (this.connectedClients) {
             for (ConnectedClient connectedClient: this.connectedClients) {
                 connectedClient.pushAllActionsToPool();
@@ -54,7 +54,12 @@ public class BOBServer {
         }
         synchronized (this.serverModel) {
             serverModel.acceptAcceleration(new ServerToModel(sampledActions, true));
-            Status status = serverModel.getCurrentStatus(System.currentTimeMillis());
+            Status status;
+            if (generateID != null) {
+                status = this.serverModel.addClient(generateID, System.currentTimeMillis());
+            } else {
+                status = serverModel.getStatusFromCurrent(System.currentTimeMillis());
+            }
             return new SyncronizationMessage(status);
         }
     }
@@ -118,7 +123,7 @@ public class BOBServer {
      */
     public void removeConnectedClient(ConnectedClient client) {
         synchronized (this.serverModel) {
-            this.serverModel.removeBall(client.getID());
+            this.serverModel.removeClient(client.getID());
         }
         synchronized (this.connectedClients) {
             connectedClients.remove(client);
@@ -140,11 +145,12 @@ public class BOBServer {
     class BroadcastTask extends TimerTask {
         @Override
         public void run() {
-            SyncronizationMessage message = getCurrentSyncronizationMessage();
+            JSONObject message = new JSONObject("{method:sync}");
+            message.put("sync-msg", getCurrentSyncronizationMessage(null).encodeJSON());
             synchronized (connectedClients) {
                 for (ConnectedClient connectedClient: connectedClients) {
                     try {
-                        connectedClient.sendJsonResponse(message.encodeJSON());
+                        connectedClient.sendJsonResponse(message);
                     } catch (IOException ex) {
                         ex.printStackTrace();
                     }
@@ -165,9 +171,6 @@ public class BOBServer {
                 Socket clientSocket = serverSocket.accept();
                 if (getConnectionCount() < Config.MAX_CONNECTION) {
                     int generatedID = generateId();
-                    synchronized (this.serverModel) {
-                        this.serverModel.addBall(generatedID);
-                    }
                     new ConnectedClient(generatedID, clientSocket, this);
                 }
             } catch (IOException ex) {

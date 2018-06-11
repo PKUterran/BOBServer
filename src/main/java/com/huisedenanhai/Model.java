@@ -16,6 +16,9 @@ abstract public class Model
         public final double getRadium(){ return Math.sqrt(size / Math.PI); }//获取半径
         public int ID;
         public final Color color;
+        public static final Color[] COLORS = {Color.WHITE, Color.PINK, Color.CYAN, Color.YELLOW, Color.GREEN};
+        public static final int COLOR_NUM = COLORS.length;
+        //营养，边长，标号，位置，颜色
 
         public Ball(int ID,
                     double x, double y,
@@ -145,11 +148,13 @@ abstract public class Model
     public static final long SEED = 1000000007L;            //种子，保证每个模型的零食生成序列相同
     public static final int MAX_SNACK_SIZE = 50000;         //在这场游戏中，总共会生成多少零食
     public static final double SNACK_PER_MS = 1.;           //每ms生成的零食个数
+    public long currentTime = 0;
     Random snackRandom = new Random(SEED);
     Snack[] globalSnacks = new Snack[MAX_SNACK_SIZE];       //零食及其状态
 
-    public Model()
+    public Model(long time)
     {
+    	currentTime = time;
         for (int i = 0; i < MAX_SNACK_SIZE; i++)
             globalSnacks[i] = new Snack(
                     snackRandom.nextInt(WIDTH),
